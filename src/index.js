@@ -29,24 +29,26 @@ class Application extends React.Component {
   container: this.mapContainer,
   style: 'mapbox://styles/mapbox/streets-v11',
   center: [this.state.lng, this.state.lat],
-  zoom: this.state.zoom 
+  zoom: this.state.zoom
   });
 
-  function switchLayer() {
-    if(this.state.active===options[0]){
-      map.setStyle(options[0].url);
-    }
-    if(this.state.active===options[1]){
-      map.setStyle(options[1].url);
-    }
-  }
-  function switchLayerNum(i) {
-    //if(this.state.active===options[0]){
-      map.setStyle(options[i].url);
-    //}
+  var geolocate = new mapboxgl.GeolocateControl();
+  map.addControl(geolocate);
 
+  map.on('load', function() {
+    geolocate.trigger();
+  });
+
+  var layerList = document.getElementById('menu');
+  var inputs = layerList.getElementsByTagName('input');
+  function switchLayer(layer) {
+  var layerId = layer.target.id;
+  map.setStyle('mapbox://styles/mapbox/' + layerId);
   }
 
+  for (var i = 0; i < inputs.length; i++) {
+  inputs[i].onclick = switchLayer;
+  }
 
   map.on('move', () => {
   this.setState({
@@ -60,20 +62,20 @@ class Application extends React.Component {
 render() {
 
   const renderOptions = (option, i) => {
-        return (
+        /*return (
           <label key={i} className="toggle-container">
             <input onChange={() => { this.switchLayer(); this.setState({ active: options[i]}) } } checked={option.url=== this.state.active.url} name="toggle" type="radio" />
             <div className="toggle txt-s py3 toggle--active-white">{option.name}</div>
           </label>
-        );
+        );*/
       }
 
 return (
 <div>
 <div ref={el => this.mapContainer = el} className="mapContainer" />
-<div className="toggle-group absolute top left ml12 mt12 border border--2 border--white bg-white shadow-darken10 z1">
-  {options.map(renderOptions)}
-</div>
+/*<div className="toggle-group absolute top left ml12 mt12 border border--2 border--white bg-white shadow-darken10 z1">
+  //{options.map(renderOptions)}
+//</div>*/
 </div>
 )
 }
