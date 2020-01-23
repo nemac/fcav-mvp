@@ -39,16 +39,19 @@ class Application extends React.Component {
     geolocate.trigger();
   });
 
-  var layerList = document.getElementById('menu');
-  var inputs = layerList.getElementsByTagName('input');
+  //var layerList = document.getElementById('menu');
+  //var layerList = document.getElementsByClassName("")
+  //var inputs = layerList.getElementsByTagName('input');
   function switchLayer(layer) {
   var layerId = layer.target.id;
   map.setStyle('mapbox://styles/mapbox/' + layerId);
   }
-
-  for (var i = 0; i < inputs.length; i++) {
-  inputs[i].onclick = switchLayer;
+  function changeMap(layerID){
+    map.setStyle('mapbox://styles/mapbox/' + layerID);
   }
+  //for (var i = 0; i < inputs.length; i++) {
+  //inputs[i].onclick = switchLayer;
+  //}
 
   map.on('move', () => {
   this.setState({
@@ -76,6 +79,29 @@ return (
 /*<div className="toggle-group absolute top left ml12 mt12 border border--2 border--white bg-white shadow-darken10 z1">
   //{options.map(renderOptions)}
 //</div>*/
+<div className='toggle-group absolute top left ml12 mt12 border border--2 border--white bg-white shadow-darken10 z1'>
+<img src="https://www.drupalasheville.com/sites/default/files/styles/large/public/2016-05/nemac.png?itok=cF__xuhM" width="150"></img>
+  <label className='toggle-container'>
+    <input checked name='toggle-1' type='radio' id="streets-v11" onChange={this.changeMap}/>
+    <div className='toggle'>Streets</div>
+  </label>
+  <label className='toggle-container'>
+    <input name='toggle-1' type='radio' id="light-v10"/>
+    <div className='toggle'>Light</div>
+  </label>
+  <label className='toggle-container'>
+    <input name='toggle-1' type='radio' id="dark-v10" />
+    <div className='toggle'>Dark</div>
+  </label>
+  <label className='toggle-container'>
+    <input name='toggle-1' type='radio' id="outdoors-v11"/>
+    <div className='toggle'>Outdoors</div>
+  </label>
+  <label className='toggle-container'>
+    <input name='toggle-1' type='radio' id="satellite-v9"/>
+    <div className='toggle' onChange={this.changeMap}>Satellite</div>
+  </label>
+</div>
 </div>
 )
 }
