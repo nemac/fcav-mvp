@@ -15,6 +15,10 @@ const options = [{
 
 
 class Application extends React.Component {
+  handleClick = event => {
+    this.map.setStyle('mapbox://styles/mapbox/' + event.currentTarget.id);
+    console.log(event.currentTarget.id);
+  }
   constructor(props){
     super(props);
     this.state = {
@@ -23,6 +27,7 @@ class Application extends React.Component {
       zoom: 12,
       active: options[0]
     };
+    this.handleClick = this.handleClick.bind(this)
   }
   componentDidMount() {
   const map = new mapboxgl.Map({
@@ -31,7 +36,7 @@ class Application extends React.Component {
   center: [this.state.lng, this.state.lat],
   zoom: this.state.zoom
   });
-
+  this.map = map;
   var geolocate = new mapboxgl.GeolocateControl();
   map.addControl(geolocate);
 
@@ -52,6 +57,7 @@ class Application extends React.Component {
   //for (var i = 0; i < inputs.length; i++) {
   //inputs[i].onclick = switchLayer;
   //}
+
 
   map.on('move', () => {
   this.setState({
@@ -76,32 +82,35 @@ render() {
 return (
 <div>
 <div ref={el => this.mapContainer = el} className="mapContainer" />
-/*<div className="toggle-group absolute top left ml12 mt12 border border--2 border--white bg-white shadow-darken10 z1">
-  //{options.map(renderOptions)}
-//</div>*/
-<div className='toggle-group absolute top left ml12 mt12 border border--2 border--white bg-white shadow-darken10 z1'>
+<div className='grid absolute'>
+<div className='bg-blue  ml12 mt12 border border--2 border--white bg-white shadow-darken10  round-tl-bold round-bl-bold'>
 <img src="https://www.drupalasheville.com/sites/default/files/styles/large/public/2016-05/nemac.png?itok=cF__xuhM" width="150"></img>
-  <label className='toggle-container'>
-    <input checked name='toggle-1' type='radio' id="streets-v11" onChange={this.changeMap}/>
+</div>
+<div className='toggle-group bottom hmax60 ml12 mt12 border border--2 border--white bg-white shadow-darken10 unround-tl unround-bl unround-br'>
+
+  <label className='toggle-container mt12'>
+    <input defaultChecked name='toggle-1' type='radio' id="streets-v11" onClick={this.handleClick}/>
     <div className='toggle'>Streets</div>
   </label>
-  <label className='toggle-container'>
-    <input name='toggle-1' type='radio' id="light-v10"/>
+  <label className='toggle-container mt12'>
+    <input name='toggle-1' type='radio' id="light-v10" onClick={this.handleClick}/>
     <div className='toggle'>Light</div>
   </label>
-  <label className='toggle-container'>
-    <input name='toggle-1' type='radio' id="dark-v10" />
+  <label className='toggle-container mt12'>
+    <input name='toggle-1' type='radio' id="dark-v10" onClick={this.handleClick} />
     <div className='toggle'>Dark</div>
   </label>
-  <label className='toggle-container'>
-    <input name='toggle-1' type='radio' id="outdoors-v11"/>
+  <label className='toggle-container mt12'>
+    <input name='toggle-1' type='radio' id="outdoors-v11" onClick={this.handleClick}/>
     <div className='toggle'>Outdoors</div>
   </label>
-  <label className='toggle-container'>
-    <input name='toggle-1' type='radio' id="satellite-v9"/>
-    <div className='toggle' onChange={this.changeMap}>Satellite</div>
+  <label className='toggle-container mt12'>
+    <input name='toggle-1' type='radio' id="satellite-v9" onClick={this.handleClick}/>
+    <div className='toggle'>Satellite</div>
   </label>
 </div>
+</div>
+
 </div>
 )
 }
