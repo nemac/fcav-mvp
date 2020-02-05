@@ -20,7 +20,7 @@ jobs:
       run: npm install
     - name: Deploy to GH Pages
       run: |
-        git config user.email "${{ GITHUB_ACTOR }}"
-        git config user.name "${{ GITHUB_ACTOR }}"
+        git config user.email "jbliss@unca.edu" # TODO: hardcode = bad. Fix this.
+        git config user.name "Jeff Bliss" # TODO: hardcode = bad. Fix this.
         git remote set-url origin https://${{ secrets.GH_ACTION_TOKEN }}@github.com/nemac/fcav-mvp.git
         npm run deploy
