@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 importScripts(
-  "/fcav-mvp/precache-manifest.ce100067b0e0ffde9dbd8bed887ee38d.js"
+  "/fcav-mvp/precache-manifest.c02327e27d0a8ae1de29c567aa939bdc.js"
 );
 
 self.addEventListener('message', (event) => {
