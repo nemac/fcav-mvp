@@ -54,7 +54,7 @@ render() {
       </div>
       <div className={`toggle-group bottom hmax60 ml12 mt12 border border--2 border--white shadow-darken10 unround-tl unround-bl unround-br bg ${this.state.theme_color}`}>
         <div className='txt-m absolute middle pl6'>
-        Hello World Base Map:
+        Base Map:
         </div>
         <label className='toggle-container mt24'>
           <input defaultChecked name='toggle-1' type='radio' id="streets-v11" themecolor="bg-white" onClick={this.handleClick}/>
