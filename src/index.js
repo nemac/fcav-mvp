@@ -3,9 +3,57 @@ import ReactDOM from "react-dom";
 import mapboxgl from "mapbox-gl";
 import nemacLogo from "./nemac_trans_500.png";
 import config from "./config";
+var julian = require('julian');
 
 mapboxgl.accessToken =
   "pk.eyJ1IjoibHVrZWpheSIsImEiOiJjazVoM3JwaTMwZXJiM2t0ZDZyZnF5bnN3In0.NQ71qNFEXZZzlOhYyWlIPg";
+
+
+Date.prototype.isLeapYear = function() {
+    var year = this.getFullYear();
+    if ((year & 3) != 0) return false;
+    return ((year % 100) != 0 || (year % 400) == 0);
+};
+// Get Day of Year
+Date.prototype.getDOY = function() {
+    var dayCount = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+    var mn = this.getMonth();
+    var dn = this.getDate();
+    var dayOfYear = dayCount[mn] + dn;
+    if (mn > 1 && this.isLeapYear()) dayOfYear++;
+    return dayOfYear;
+};
+
+function toDate(julianDay, year) {
+  // structure: YYYYMMDD
+  julianDay = parseInt(julianDay);
+  let monthIndex = 0;
+  var dayCount = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+  for(let i = 0; i < dayCount.length; i++){
+    if(julianDay > dayCount[i+1]){
+      monthIndex = i + 1;
+    }
+  }
+  let day = julianDay - dayCount[monthIndex];
+  let dateObj = new Date(year, monthIndex, day);
+  console.log(monthIndex, day, year, dateObj);
+  return dateObj;
+}
+
+function toWMSDate(dateObj) {
+  var fullDateString = dateObj.toString();
+  var year = String(dateObj.getFullYear());
+  var month = String(dateObj.getMonth() + 1);
+  var day = String(dateObj.getDate());
+  if(month.length < 2){
+    month = "0" + month;
+  }
+  if(day.length < 2){
+    day = "0" + day;
+  }
+  var wmsString = year + month + day;
+  return wmsString;
+}
 
 class Application extends React.Component {
   dateToArray = (event) => {
@@ -100,7 +148,14 @@ class Application extends React.Component {
     var geolocate = new mapboxgl.GeolocateControl();
     map.addControl(geolocate);
         //console.log(config.wms_template(20200217));
-    var customLayers = config.dates.map(date => config.wms_template(date));
+    //var jd = config.juliandates.map(date => julian.toDate("20" + date));
+    var sampleDate = toDate("033", 2020);
+    toWMSDate(sampleDate);
+    var customLayers = config.juliandates.map(jd => {
+      var date = toDate(jd, 2020);
+      var wmsdate = toWMSDate(date);
+      return config.wms_template(wmsdate);
+    });
     console.log(customLayers);
     this.customLayers = customLayers;
     map.on("style.load", () => {
