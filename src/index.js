@@ -3,7 +3,6 @@ import ReactDOM from "react-dom";
 import mapboxgl from "mapbox-gl";
 import nemacLogo from "./nemac_trans_500.png";
 import config from "./config";
-var julian = require('julian');
 
 mapboxgl.accessToken =
   "pk.eyJ1IjoibHVrZWpheSIsImEiOiJjazVoM3JwaTMwZXJiM2t0ZDZyZnF5bnN3In0.NQ71qNFEXZZzlOhYyWlIPg";
@@ -36,7 +35,7 @@ function toDate(julianDay, year) {
   }
   let day = julianDay - dayCount[monthIndex];
   let dateObj = new Date(year, monthIndex, day);
-  console.log(monthIndex, day, year, dateObj);
+//  console.log(monthIndex, day, year, dateObj);
   return dateObj;
 }
 
@@ -70,7 +69,7 @@ class Application extends React.Component {
       layerid.substring(5, 7) +
       layerid.substring(8, 10) +
       "_layer";
-    console.log(layerid);
+//    console.log(layerid);
     this.setState({
       startDate: new Date(layerid.substring(0, 4), parseInt(layerid.substring(5, 7))-1, layerid.substring(8, 10)),
     });
@@ -83,7 +82,7 @@ class Application extends React.Component {
       layerid.substring(5, 7) +
       layerid.substring(8, 10) +
       "_layer";
-    console.log(layerid);
+//    console.log(layerid);
     this.setState({
       endDate: new Date(layerid.substring(0, 4), parseInt(layerid.substring(5, 7))-1, layerid.substring(8, 10)),
     });
@@ -92,18 +91,18 @@ class Application extends React.Component {
   setDateRange = () => {
     var startIndex = -1;
     var endIndex = -1;
-    for(var index = 0; index < this.state.dateRange.length; index++){
-      if(this.state.dateRange[index] >= this.state.startDate && startIndex === -1){
+    for(var index = 0; index < this.state.dates.length; index++){
+      if(this.state.dates[index] >= this.state.startDate && startIndex === -1){
         startIndex = index;
       }
-      if(this.state.dateRange[index] >= this.state.endDate && endIndex === -1){
+      if(this.state.dates[index] >= this.state.endDate && endIndex === -1){
         endIndex = index-1;
       }
     }
     if(endIndex === -1){
-      endIndex = this.state.dateRange.length - 1;
+      endIndex = this.state.dates.length - 1;
     }
-    var dateRange = this.state.dateRange;
+    var dateRange = this.state.dates;
     var newDateRange = dateRange.slice(startIndex, endIndex+1);
     this.setState({
       dateRange: newDateRange
@@ -115,17 +114,17 @@ class Application extends React.Component {
     this.setState({
       chosenMap: event.currentTarget.id,
     });
-    console.log(event.currentTarget.id);
+//    console.log(event.currentTarget.id);
     this.setState({
       theme_color: event.currentTarget.getAttribute("themecolor"),
     });
   };
   filterDay = (event) => {
     var day = parseInt(event.currentTarget.value);
-    console.log(day);
+//    console.log(day);
     for (var index in this.customLayers) {
       var selectedLayer = this.customLayers[day].layer.id;
-      console.log(selectedLayer);
+//      console.log(selectedLayer);
 //      var visibility = this.map.getLayoutProperty(selectedLayer, "visibility");
         var visibility = "visible";
       if (visibility === "visible") {
@@ -200,7 +199,7 @@ class Application extends React.Component {
       var wmsdate = toWMSDate(date);
       return config.wms_template(wmsdate);
     });*/
-    console.log(this.state.wmsLayers);
+    ////console.log(this.state.wmsLayers);
 //    this.customLayers = customLayers;
 /*    map.on("style.load", () => {
       // Always add the same custom soruces and layers after a style change
