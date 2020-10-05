@@ -40,7 +40,7 @@ function toDate(julianDay, year) {
   return dateObj;
 }
 
-function toWMSDate(dateObj) {
+function toWMSDate(dateObj, toHyphenate=false) {
   var fullDateString = dateObj.toString();
   var year = String(dateObj.getFullYear());
   var month = String(dateObj.getMonth() + 1);
@@ -51,39 +51,69 @@ function toWMSDate(dateObj) {
   if(day.length < 2){
     day = "0" + day;
   }
-  var wmsString = year + month + day;
-  return wmsString;
+  if(toHyphenate){
+    var wmsString = year + "-" + month + "-" + day;
+    return wmsString;
+  }
+  else{
+    var wmsString = year + month + day;
+    return wmsString;
+  }
+
 }
 
 class Application extends React.Component {
-  dateToArray = (event) => {
+  setStartDate = (event) => {
     var layerid = event.currentTarget.value;
     var layeridstring =
       layerid.substring(0, 4) +
       layerid.substring(5, 7) +
       layerid.substring(8, 10) +
       "_layer";
-    console.log(layeridstring);
-    for (var index in this.customLayers) {
-      var selectedLayer = layeridstring;
-      //console.log(selectedLayer);
-      var visibility = this.map.getLayoutProperty(selectedLayer, "visibility");
-      if (visibility === "visible") {
-        this.map.setLayoutProperty(selectedLayer, "visibility", "none");
-        this.className = "";
-      } else {
-        this.className = "active";
-        this.map.setLayoutProperty(selectedLayer, "visibility", "visible");
+    console.log(layerid);
+    this.setState({
+      startDate: new Date(layerid.substring(0, 4), parseInt(layerid.substring(5, 7))-1, layerid.substring(8, 10)),
+    });
+    this.setDateRange();
+  };
+  setEndDate = (event) => {
+    var layerid = event.currentTarget.value;
+    var layeridstring =
+      layerid.substring(0, 4) +
+      layerid.substring(5, 7) +
+      layerid.substring(8, 10) +
+      "_layer";
+    console.log(layerid);
+    this.setState({
+      endDate: new Date(layerid.substring(0, 4), parseInt(layerid.substring(5, 7))-1, layerid.substring(8, 10)),
+    });
+    this.setDateRange();
+  };
+  setDateRange = () => {
+    var startIndex = -1;
+    var endIndex = -1;
+    for(var index = 0; index < this.state.dateRange.length; index++){
+      if(this.state.dateRange[index] >= this.state.startDate && startIndex === -1){
+        startIndex = index;
+      }
+      if(this.state.dateRange[index] >= this.state.endDate && endIndex === -1){
+        endIndex = index-1;
       }
     }
+    if(endIndex === -1){
+      endIndex = this.state.dateRange.length - 1;
+    }
+    var dateRange = this.state.dateRange;
+    var newDateRange = dateRange.slice(startIndex, endIndex+1);
     this.setState({
-      current_date: layerid,
+      dateRange: newDateRange
     });
-  };
+    console.log(newDateRange);
+  }
   handleClick = (event) => {
     this.map.setStyle("mapbox://styles/mapbox/" + event.currentTarget.id);
     this.setState({
-      chosen_map: event.currentTarget.id,
+      chosenMap: event.currentTarget.id,
     });
     console.log(event.currentTarget.id);
     this.setState({
@@ -96,13 +126,14 @@ class Application extends React.Component {
     for (var index in this.customLayers) {
       var selectedLayer = this.customLayers[day].layer.id;
       console.log(selectedLayer);
-      var visibility = this.map.getLayoutProperty(selectedLayer, "visibility");
+//      var visibility = this.map.getLayoutProperty(selectedLayer, "visibility");
+        var visibility = "visible";
       if (visibility === "visible") {
-        this.map.setLayoutProperty(selectedLayer, "visibility", "none");
+        //this.map.setLayoutProperty(selectedLayer, "visibility", "none");
         this.className = "";
       } else {
         this.className = "active";
-        this.map.setLayoutProperty(selectedLayer, "visibility", "visible");
+        //this.map.setLayoutProperty(selectedLayer, "visibility", "visible");
         this.setState({
           datesliderval: index,
         });
@@ -126,15 +157,28 @@ class Application extends React.Component {
       lat: 35.61540402873807,
       zoom: 12,
       theme_color: "bg-white",
-      chosen_map: "streets-v11",
-      start_date: "2020-01-16",
+      chosenMap: "streets-v11",
+      startDate: new Date("2020-01-16"),
       current_date: "2020-01-16",
-      end_date: "2020-02-17",
+      endDate: new Date("2020-02-17"),
       datesliderval: "0",
+      wmsLayers : config.juliandates.map(jd => {
+        var date = toDate(jd, 2020);
+        var wmsdate = toWMSDate(date);
+        return config.wms_template(wmsdate);
+      }),
+      dates: config.juliandates.map(jd => {
+        var date = toDate(jd, 2020);
+        return date;
+      }),
+      dateRange: config.juliandates.map(jd => {
+        var date = toDate(jd, 2020);
+        return date;
+      })
     };
     this.handleClick = this.handleClick.bind(this);
     this.filterDay = this.filterDay.bind(this);
-    this.dateToArray = this.dateToArray.bind(this);
+    this.setStartDate = this.setStartDate.bind(this);
   }
   componentDidMount() {
     const map = new mapboxgl.Map({
@@ -151,26 +195,26 @@ class Application extends React.Component {
     //var jd = config.juliandates.map(date => julian.toDate("20" + date));
     var sampleDate = toDate("033", 2020);
     toWMSDate(sampleDate);
-    var customLayers = config.juliandates.map(jd => {
+/*    var customLayers = config.juliandates.map(jd => {
       var date = toDate(jd, 2020);
       var wmsdate = toWMSDate(date);
       return config.wms_template(wmsdate);
-    });
-    console.log(customLayers);
-    this.customLayers = customLayers;
-    map.on("style.load", () => {
+    });*/
+    console.log(this.state.wmsLayers);
+//    this.customLayers = customLayers;
+/*    map.on("style.load", () => {
       // Always add the same custom soruces and layers after a style change
 
       for (var i = 0; i < customLayers.length; i++) {
         var me = customLayers[i];
-        map.addSource(me.layer.source, me.source);
-        if (this.state.chosen_map !== "satellite-v9") {
-          map.addLayer(me.layer, "aeroway-line");
+        ////map.addSource(me.layer.source, me.source);
+        if (this.state.chosenMap !== "satellite-v9") {
+          ////map.addLayer(me.layer, "aeroway-line");
         } else {
-          map.addLayer(me.layer);
+          ////map.addLayer(me.layer);
         }
       }
-    });
+    });*/
 
     map.on("load", function () {
       geolocate.trigger();
@@ -258,14 +302,25 @@ class Application extends React.Component {
                 className={` ml12 mt12 bottom border border--2 border--white bg-white shadow-darken10  round-tl-bold round-bl-bold bg ${this.state.theme_color}`}
               >
                 <div className="mr6 mb6 inline-block left">
-                  Forest change (8-day period):
+                  Start Date:
                   <input
                     className="input w150"
-                    value={this.state.current_date}
+                    value={toWMSDate(this.state.startDate, true)}
                     type="date"
-                    onChange={this.dateToArray}
-                    min={this.state.start_date}
-                    max={this.state.end_date}
+                    onChange={this.setStartDate}
+                    min={"2020-01-01"}
+                    max={this.state.endDate}
+                  />
+                </div>
+                <div className="mr6 mb6 inline-block left">
+                  End Date:
+                  <input
+                    className="input w150"
+                    value={toWMSDate(this.state.endDate, true)}
+                    type="date"
+                    onChange={this.setEndDate}
+                    min={this.state.startDate}
+                    max={"2020-12-31"}
                   />
                 </div>
                 <div className="range mr5 mb6 inline-block right">
