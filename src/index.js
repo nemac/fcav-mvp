@@ -62,6 +62,34 @@ function toWMSDate(dateObj, toHyphenate=false) {
 }
 
 class Application extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      lng: -82.56582048445668,
+      lat: 35.61540402873807,
+      zoom: 12,
+      theme_color: "bg-white",
+      chosenMap: "streets-v11",
+      startDate: new Date("2020-01-16"),
+      current_date: "2020-01-16",
+      endDate: new Date("2020-02-17"),
+      selectedDate: "0",
+      wmsLayers : config.juliandates.map(jd => {
+        var date = toDate(jd, 2020);
+        var wmsdate = toWMSDate(date);
+        return config.wms_template(wmsdate);
+      }),
+      dates: config.juliandates.map(jd => {
+        var date = toDate(jd, 2020);
+        return date;
+      }),
+    };
+    this.state.dateRange = this.getDateRange(this.state.startDate, this.state.endDate);
+    this.handleClick = this.handleClick.bind(this);
+    this.handleSliderChange = this.handleSliderChange.bind(this);
+    this.setStartDate = this.setStartDate.bind(this);
+
+  }
   setStartDate = (event) => {
     var layerid = event.currentTarget.value;
     var layeridstring =
@@ -70,10 +98,11 @@ class Application extends React.Component {
       layerid.substring(8, 10) +
       "_layer";
 //    console.log(layerid);
+    var startDate = new Date(layerid.substring(0, 4), parseInt(layerid.substring(5, 7))-1, layerid.substring(8, 10));
     this.setState({
       startDate: new Date(layerid.substring(0, 4), parseInt(layerid.substring(5, 7))-1, layerid.substring(8, 10)),
+      dateRange: this.getDateRange(startDate, this.state.endDate)
     });
-    this.setDateRange();
   };
   setEndDate = (event) => {
     var layerid = event.currentTarget.value;
@@ -83,19 +112,20 @@ class Application extends React.Component {
       layerid.substring(8, 10) +
       "_layer";
 //    console.log(layerid);
+    var endDate = new Date(layerid.substring(0, 4), parseInt(layerid.substring(5, 7))-1, layerid.substring(8, 10));
     this.setState({
       endDate: new Date(layerid.substring(0, 4), parseInt(layerid.substring(5, 7))-1, layerid.substring(8, 10)),
+      dateRange: this.getDateRange(this.state.startDate, endDate)
     });
-    this.setDateRange();
   };
-  setDateRange = () => {
+  getDateRange = (startDate, endDate) => {
     var startIndex = -1;
     var endIndex = -1;
     for(var index = 0; index < this.state.dates.length; index++){
-      if(this.state.dates[index] >= this.state.startDate && startIndex === -1){
+      if(this.state.dates[index] >= startDate && startIndex === -1){
         startIndex = index;
       }
-      if(this.state.dates[index] >= this.state.endDate && endIndex === -1){
+      if(this.state.dates[index] >= endDate && endIndex === -1){
         endIndex = index-1;
       }
     }
@@ -104,10 +134,8 @@ class Application extends React.Component {
     }
     var dateRange = this.state.dates;
     var newDateRange = dateRange.slice(startIndex, endIndex+1);
-    this.setState({
-      dateRange: newDateRange
-    });
     console.log(newDateRange);
+    return newDateRange;
   }
   handleClick = (event) => {
     this.map.setStyle("mapbox://styles/mapbox/" + event.currentTarget.id);
@@ -119,10 +147,14 @@ class Application extends React.Component {
       theme_color: event.currentTarget.getAttribute("themecolor"),
     });
   };
-  filterDay = (event) => {
-    var day = parseInt(event.currentTarget.value);
+handleSliderChange = (event) => {
+    var index = parseInt(event.currentTarget.value);
+    this.setState({
+      selectedDate: this.state.dateRange[index],
+    })
+    console.log(index);
 //    console.log(day);
-    for (var index in this.customLayers) {
+    /*for (var index in this.customLayers) {
       var selectedLayer = this.customLayers[day].layer.id;
 //      console.log(selectedLayer);
 //      var visibility = this.map.getLayoutProperty(selectedLayer, "visibility");
@@ -147,38 +179,8 @@ class Application extends React.Component {
       layerid.substring(6, 8);
     this.setState({
       current_date: datestring,
-    });
+    });*/
   };
-  constructor(props) {
-    super(props);
-    this.state = {
-      lng: -82.56582048445668,
-      lat: 35.61540402873807,
-      zoom: 12,
-      theme_color: "bg-white",
-      chosenMap: "streets-v11",
-      startDate: new Date("2020-01-16"),
-      current_date: "2020-01-16",
-      endDate: new Date("2020-02-17"),
-      datesliderval: "0",
-      wmsLayers : config.juliandates.map(jd => {
-        var date = toDate(jd, 2020);
-        var wmsdate = toWMSDate(date);
-        return config.wms_template(wmsdate);
-      }),
-      dates: config.juliandates.map(jd => {
-        var date = toDate(jd, 2020);
-        return date;
-      }),
-      dateRange: config.juliandates.map(jd => {
-        var date = toDate(jd, 2020);
-        return date;
-      })
-    };
-    this.handleClick = this.handleClick.bind(this);
-    this.filterDay = this.filterDay.bind(this);
-    this.setStartDate = this.setStartDate.bind(this);
-  }
   componentDidMount() {
     const map = new mapboxgl.Map({
       container: this.mapContainer,
@@ -326,11 +328,10 @@ class Application extends React.Component {
                   <input
                     type="range"
                     min="0"
-                    max={"4"}
+                    max={this.state.dateRange.length-1}
                     step="1"
-                    defaultValue={"4"}
-                    value={this.state.value}
-                    onChange={this.filterDay}
+                    value={this.state.dateRange.indexOf(this.state.selectedDate)}
+                    onChange={this.handleSliderChange}
                   />
                 </div>
               </div>
