@@ -88,7 +88,7 @@ class Application extends React.Component {
     this.handleClick = this.handleClick.bind(this);
     this.handleSliderChange = this.handleSliderChange.bind(this);
     this.setStartDate = this.setStartDate.bind(this);
-
+    this.state.wmsLayersRange = this.getWMSDateRange(this.state.startDate, this.state.endDate);
   }
   setStartDate = (event) => {
     var layerid = event.currentTarget.value;
@@ -101,7 +101,8 @@ class Application extends React.Component {
     var startDate = new Date(layerid.substring(0, 4), parseInt(layerid.substring(5, 7))-1, layerid.substring(8, 10));
     this.setState({
       startDate: new Date(layerid.substring(0, 4), parseInt(layerid.substring(5, 7))-1, layerid.substring(8, 10)),
-      dateRange: this.getDateRange(startDate, this.state.endDate)
+      dateRange: this.getDateRange(startDate, this.state.endDate),
+      wmsLayersRange: this.getWMSDateRange(startDate, this.state.endDate)
     });
   };
   setEndDate = (event) => {
@@ -115,7 +116,8 @@ class Application extends React.Component {
     var endDate = new Date(layerid.substring(0, 4), parseInt(layerid.substring(5, 7))-1, layerid.substring(8, 10));
     this.setState({
       endDate: new Date(layerid.substring(0, 4), parseInt(layerid.substring(5, 7))-1, layerid.substring(8, 10)),
-      dateRange: this.getDateRange(this.state.startDate, endDate)
+      dateRange: this.getDateRange(this.state.startDate, endDate),
+      wmsLayersRange: this.getWMSDateRange(this.state.startDate, endDate)
     });
   };
   getDateRange = (startDate, endDate) => {
@@ -137,6 +139,25 @@ class Application extends React.Component {
     console.log(newDateRange);
     return newDateRange;
   }
+  getWMSDateRange = (startDate, endDate) => {
+    var startIndex = -1;
+    var endIndex = -1;
+    for(var index = 0; index < this.state.dates.length; index++){
+      if(this.state.dates[index] >= startDate && startIndex === -1){
+        startIndex = index;
+      }
+      if(this.state.dates[index] >= endDate && endIndex === -1){
+        endIndex = index-1;
+      }
+    }
+    if(endIndex === -1){
+      endIndex = this.state.dates.length - 1;
+    }
+    var wmsLayers = this.state.wmsLayers;
+    var newWMSLayers = wmsLayers.slice(startIndex, endIndex+1);
+    console.log(newWMSLayers);
+    return newWMSLayers;
+  }
   handleClick = (event) => {
     this.map.setStyle("mapbox://styles/mapbox/" + event.currentTarget.id);
     this.setState({
@@ -153,6 +174,9 @@ handleSliderChange = (event) => {
       selectedDate: this.state.dateRange[index],
     })
     console.log(index);
+      var selectedLayer = this.state.wmsLayersRange[index];
+      console.log("Layer to load: " + selectedLayer.layer.id);
+      //map.addSource(selectedLayer.layer.source, selectedLayer.source);
 //    console.log(day);
     /*for (var index in this.customLayers) {
       var selectedLayer = this.customLayers[day].layer.id;
