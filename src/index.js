@@ -75,20 +75,23 @@ class Application extends React.Component {
       endDate: new Date("2020-02-17"),
       selectedDate: "0",
       wmsLayers : config.juliandates.map(jd => {
-        var date = toDate(jd, 2020);
+        var date = toDate(parseInt(jd)+7, 2020); //7 day offset
         var wmsdate = toWMSDate(date);
         return config.wms_template(wmsdate);
       }),
       dates: config.juliandates.map(jd => {
-        var date = toDate(jd, 2020);
+        var date = toDate(parseInt(jd)+7, 2020);
         return date;
       }),
+      loadedLayers: this.loadInitialLayers(this.wmsLayers),
     };
     this.state.dateRange = this.getDateRange(this.state.startDate, this.state.endDate);
+    this.state.selectedDate = this.state.dateRange[0]
     this.handleClick = this.handleClick.bind(this);
     this.handleSliderChange = this.handleSliderChange.bind(this);
     this.setStartDate = this.setStartDate.bind(this);
     this.state.wmsLayersRange = this.getWMSDateRange(this.state.startDate, this.state.endDate);
+    this.loadInitialLayers = this.loadInitialLayers.bind(this);
   }
   setStartDate = (event) => {
     var layerid = event.currentTarget.value;
@@ -156,6 +159,7 @@ class Application extends React.Component {
     var wmsLayers = this.state.wmsLayers;
     var newWMSLayers = wmsLayers.slice(startIndex, endIndex+1);
     console.log(newWMSLayers);
+    this.loadInitialLayers(newWMSLayers);
     return newWMSLayers;
   }
   handleClick = (event) => {
@@ -167,6 +171,20 @@ class Application extends React.Component {
     this.setState({
       theme_color: event.currentTarget.getAttribute("themecolor"),
     });
+    this.state.wmsLayersRange.forEach(e => {
+      //this.map.addSource(e.layer.source, e.source);
+      this.map.addLayer(e.layer);
+    })
+    var initialLayer = this.state.dateRange.indexOf(this.state.selectedDate)
+    this.map.setLayoutProperty(this.state.wmsLayersRange[initialLayer].layer.id, "visibility", "visible");
+  };
+  loadInitialLayers = (wmsLayers) => {
+    console.log(this.map);
+    for(var index in wmsLayers){
+      //this.map.addSource(wmsLayers.source);
+      //this.map.addLayer(wmsLayers.layer);
+      //console.log("added");
+    }
   };
 handleSliderChange = (event) => {
     var index = parseInt(event.currentTarget.value);
@@ -174,9 +192,20 @@ handleSliderChange = (event) => {
       selectedDate: this.state.dateRange[index],
     })
     console.log(index);
-      var selectedLayer = this.state.wmsLayersRange[index];
-      console.log("Layer to load: " + selectedLayer.layer.id);
-      //map.addSource(selectedLayer.layer.source, selectedLayer.source);
+    var selectedLayer = this.state.wmsLayersRange[index];
+    console.log("Layer to load: " + selectedLayer.layer.id);
+    //if(!this.map.getLayer(selectedLayer.layer.id)){ //layer doesnt exist, lets add it
+  //    this.map.addSource(selectedLayer.layer.source, selectedLayer.source);
+  //    this.map.addLayer(selectedLayer.layer);
+  //    this.setState(
+//        { loadedLayers: [...this.state.loadedLayers, selectedLayer] }
+  //    )
+  //  }
+    this.state.wmsLayersRange.forEach(e => {
+      this.map.setLayoutProperty(e.layer.id, "visibility", "none");
+    })
+    this.map.setLayoutProperty(selectedLayer.layer.id, "visibility", "visible");
+    //var currentLayers =
 //    console.log(day);
     /*for (var index in this.customLayers) {
       var selectedLayer = this.customLayers[day].layer.id;
@@ -240,9 +269,15 @@ handleSliderChange = (event) => {
         }
       }
     });*/
-
+    let self = this;
     map.on("load", function () {
       geolocate.trigger();
+      self.state.wmsLayersRange.forEach(e => {
+        this.addSource(e.layer.source, e.source);
+        this.addLayer(e.layer);
+      })
+      var initialLayer = self.state.dateRange.indexOf(self.state.selectedDate)
+      this.setLayoutProperty(self.state.wmsLayersRange[initialLayer].layer.id, "visibility", "visible");
     });
 
     map.on("move", () => {

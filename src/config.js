@@ -7,7 +7,7 @@ const config = {
       source: {
         type: "raster",
         tiles: [
-          `https://fswms.nemac.org/forwarn_compare?TRANSPARENT=true&PROJECTION=EPSG%3A3857&UNITS=m&LAYERS=FW_${datestring}_1YR_FW2&SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&STYLES=&FORMAT=image%2Fpng&SRS=EPSG%3A3857&bbox={bbox-epsg-3857}&WIDTH=256&HEIGHT=256`,
+          `https://fswms.nemac.org/forwarn_compare?TRANSPARENT=true&PROJECTION=EPSG%3A3857&UNITS=m&LAYERS=FW_${datestring}_1YR_FW2&SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&STYLES=&FORMAT=image%2Fpng&SRS=EPSG%3A3857&bbox={bbox-epsg-3857}&WIDTH=1024&HEIGHT=1024`,
         ],
         tileSize: 1024,
       },
@@ -16,7 +16,7 @@ const config = {
         type: "raster",
         source: `${datestring}_source`,
         layout: {
-          visibility: "visible",
+          visibility: "none",
         },
         paint: {},
       },
