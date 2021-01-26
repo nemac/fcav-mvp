@@ -89,14 +89,28 @@ const icon = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.6/dist/images/marker-icon.png",
   shadowUrl: "https://unpkg.com/leaflet@1.6/dist/images/marker-shadow.png"
 });
+function initialize(mapRef){
 
+}
 function App() {
   const mapRef = useMap();
-  console.log(mapRef);
+  //console.log(mapRef);
+  mapRef.eachLayer(function(layer){
+    //console.log(layer);
+  })
   //const firstOverlayRef = useRef();
   //const secondOverlayRef = useRef();
   const [baseMaps, setBaseMaps] = useStateWithLabel(config.baseLayers, "baseMaps");
-  const [activeBaseMap, setActiveBaseMap] = useStateWithLabel("Dark", "activeBaseMap");
+  const [activeBaseMap, setActiveBaseMap] = useStateWithLabel(config.baseLayers[2], "activeBaseMap");
+
+  //var initialBaseLayer = L.tileLayer(activeBaseMap.url);
+  //activeBaseMap.layer = initialBaseLayer;
+  //mapRef.addLayer(initialBaseLayer);
+
+  mapRef.eachLayer(function(layer){
+    //console.log(layer);
+  })
+
   const [startDate, setStartDate] = useStateWithLabel(
     new Date("2020-01-16"),
     "startDate"
@@ -121,17 +135,12 @@ function App() {
 
 
   mapRef.on("baselayerchange", function(e) {
-    setActiveBaseMap(e.name);
+    //setActiveBaseMap(e.name);
     //e.layer.bringToBack();
     console.log("baselayerchange");
   });
 
   //mapRef.on('load', function(){
-  var wmsTest = L.tileLayer.wms(wmsLayers[0].baseUrl, wmsLayers[0].options);
-  mapRef.addLayer(wmsTest);
-  wmsTest.bringToFront();
-  console.log(mapRef);
-  //});
 
   /*const addLayers = () => {
     if (mapRef.current && firstOverlayRef.current) {
@@ -152,16 +161,47 @@ function App() {
   };*/
   const [product, setProduct] = useStateWithLabel("forwarn", "Product");
 
+  useEffect(() => { //initialize map
+  var baseLayer = L.tileLayer(activeBaseMap.url);
+  activeBaseMap.layer = baseLayer;
+  mapRef.addLayer(baseLayer);
+  //setActiveBaseMap(baseLayer);
+    var wmsTest = L.tileLayer.wms(wmsLayers[0].baseUrl, wmsLayers[0].options);
+    mapRef.addLayer(wmsTest);
+    wmsTest.bringToFront();
+    console.log(mapRef);
+    //});
+  }, []);
+
   const handleProductChange = (event) => {
     setProduct(event.target.value);
   };
   const handleBaseLayerChange = (event) => {
     var index = event.target.value;
-    setActiveBaseMap(baseMaps[index].name);
+    var currLayer = activeBaseMap.layer;
+    console.log("current layer:",currLayer);
+    if(currLayer!=null){
+      mapRef.removeLayer(currLayer);
+      //currLayer.remove();
+    }
+
+    console.log("Removing ", currLayer);
+    mapRef.eachLayer(function(layer){
+      console.log(layer);
+    })
+    //setActiveBaseMap(baseMaps[index]);
     //var baseElement = baseMaps.find((event.target.value));
   //  console.log(baseElement);
     var baseLayer = L.tileLayer(baseMaps[index].url);
+    baseMaps[index].layer = baseLayer;
+    setActiveBaseMap(baseMaps[index]);
+    console.log("adding ", baseLayer);
     mapRef.addLayer(baseLayer);
+    activeBaseMap.layer = baseLayer;
+    baseLayer.bringToBack();
+    mapRef.eachLayer(function(layer){
+      console.log(layer);
+    })
   };
   return (
     <div id = "UI">
@@ -192,7 +232,7 @@ function App() {
             <Select
               labelId="fcav-product-select-label"
               id="fcav-product-select"
-              value = {activeBaseMap.name}
+              value = {baseMaps.indexOf(activeBaseMap)}
               onChange={handleBaseLayerChange}
               label="Product"
             >
