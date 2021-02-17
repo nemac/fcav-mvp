@@ -9,8 +9,10 @@ const config = {
         format: 'image/png',
         transparent: true,
         tileSize: 2048,
-        uppercase : true
-      }
+        uppercase : true,
+        opacity: 0
+      },
+      leafletLayer: ""
     }
     return sampleLayer;
   },

@@ -10,11 +10,10 @@ const theme = createMuiTheme({
       main: "#424242"
     },
     secondary: {
-      main: "#212121"
+      main: "#e0e0e0"
     }
   }
 });
-
 const rootElement = document.getElementById("app");
 ReactDOM.render(
   <ThemeProvider theme={theme}>

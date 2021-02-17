@@ -17,15 +17,30 @@ import {
   KeyboardDatePicker,
 } from '@material-ui/pickers';
 import DateFnsUtils from '@date-io/date-fns';
+import Typography from '@material-ui/core/Typography';
+import Slider from '@material-ui/core/Slider';
+import { makeStyles } from '@material-ui/core/styles';
+import Icon from '@material-ui/core/Icon';
+import Button from '@material-ui/core/Button';
+import PlayArrowIcon from '@material-ui/icons/PlayArrow';
 
 const center = [35.61540402873807, -82.56582048445668];
 const zoom = 12;
+
+function isLeapYear(year)
+{
+  return ((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0);
+}
 
 function toDate(julianDay, year) {
   // structure: YYYYMMDD
   julianDay = parseInt(julianDay);
   let monthIndex = 0;
   var dayCount = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+  var dayCountLY = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
+  if(isLeapYear(year)){
+    dayCount = dayCountLY;
+  }
   for (let i = 0; i < dayCount.length; i++) {
     if (julianDay > dayCount[i + 1]) {
       monthIndex = i + 1;
@@ -79,6 +94,10 @@ function App() {
     "endDate"
   );
 
+  const [dateSliderVal, setDateSliderVal] = useStateWithLabel(0, "dateSliderVal");
+  const [sliderAnimCount, setSliderAnimCount] = useStateWithLabel(0, "sliderAnimCount");
+
+  //javascript objects
   const [wmsLayers, setWMSLayers] = useStateWithLabel(
     config.juliandates.map(jd => {
       var date = toDate(parseInt(jd) + 7, 2020); //7 day offset
@@ -96,8 +115,11 @@ function App() {
   const loadInitialLayers = (wmsLayers) => {
     for(var index in wmsLayers){
       var wmsLayer = L.tileLayer.wms(wmsLayers[index].baseUrl, wmsLayers[index].options);
-      mapRef.addLayer(wmsLayer);
-      wmsLayer.bringToFront();
+    //  wmsLayer.opacity = 0;
+      wmsLayers[index].leafletLayer = wmsLayer;
+      //console.log("Adding " + wmsLayer.options.layers);
+    //  mapRef.addLayer(wmsLayer);
+    //  wmsLayer.bringToFront();
     }
   };
 
@@ -167,6 +189,12 @@ function App() {
     setProduct(event.target.value);
   };
 
+  const handleUIClick = (event) =>{
+        //console.log(event);
+    event.stopPropagation();
+    console.log(event);
+  };
+
   const handleBaseLayerChange = (event) => {
     var index = event.target.value;
     var currLayer = activeBaseMap.layer;
@@ -209,9 +237,9 @@ function App() {
     console.log(layerIdString);
 
     setStartDate(date);
-    var newDateRange = getDateRange(startDate, endDate);
+    var newDateRange = getDateRange(date, endDate);
     setDateRange(newDateRange);
-    var newDates = getWMSDateRange(startDate, endDate);
+    var newDates = getWMSDateRange(date, endDate);
     setWmsLayersRange(newDates);
   };
 
@@ -232,18 +260,52 @@ function App() {
     console.log(layerIdString);
 
     setEndDate(date); //set end date state
-    var newDateRange = getDateRange(startDate, endDate); //get new array of date objects
+    var newDateRange = getDateRange(startDate, date); //get new array of date objects
     setDateRange(newDateRange); //set date objects to state
-    var newWMSDates = getWMSDateRange(startDate, endDate); //get new array of wms layers
+    var newWMSDates = getWMSDateRange(startDate, date); //get new array of wms layers
     setWmsLayersRange(newWMSDates); //set wms layers to state
   };
 
+  const handleSliderChange = (event, value) => {
+    var index = value;
+    setDateSliderVal(index);
+        console.log("slider change: " + index);
+    /*wmsLayersRange.forEach(e => {
+            console.log("has layer: " + e.options.layers + " " + mapRef.hasLayer(e.leafletLayer));
+      console.log("Removing " + e.options.layers);
+      mapRef.removeLayer(e.leafletLayer);
+      //e.leafletLayer.setOpacity(0);
+      console.log("has layer: " + e.options.layers + " " + mapRef.hasLayer(e.leafletLayer));
+    })
+    //console.log(wmsLayersRange);
+    wmsLayersRange[index].leafletLayer.setOpacity(1);
+    mapRef.addLayer(wmsLayersRange[index].leafletLayer);
+    wmsLayersRange[index].leafletLayer.bringToFront();*/
+    mapRef.eachLayer((layer) =>{
+      if(layer != activeBaseMap.layer){
+        mapRef.removeLayer(layer);
+      }
+    })
+    wmsLayersRange[index].leafletLayer.setOpacity(1);
+    mapRef.addLayer(wmsLayersRange[index].leafletLayer);
+    wmsLayersRange[index].leafletLayer.bringToFront();
+    //console.log(mapRef.layers);
+  }
+  const startSliderAnim = () =>{
+    console.log("start anim");
+  }
+  const useStyles = makeStyles({
+    root: {
+      width: 300,
+    },
+  });
+  const classes = useStyles();
   return (
     <div id = "UI">
-      <AppBar position="static" color="primary">
+      <AppBar position="static" color="primary" style={{flexWrap: 'flex', flexDirection: 'column'}} onClick={handleUIClick}>
         <Toolbar>
           <img src={nemacLogo} width="150" alt="deez nuts"></img>
-          <FormControl variant="outlined" >
+          <FormControl variant="outlined" style={{ marginLeft: 16, marginRight: 16 }}>
             <InputLabel shrink id="demo-simple-select-placeholder-label-label">
               Product
             </InputLabel>
@@ -260,7 +322,7 @@ function App() {
               <MenuItem value={"forwarn"}>FORWARN</MenuItem>
             </Select>
           </FormControl>
-          <FormControl variant="outlined" >
+          <FormControl variant="outlined" style={{marginRight: 16 }}>
             <InputLabel shrink id="demo-simple-select-placeholder-label-label">
               Base Layer
             </InputLabel>
@@ -272,12 +334,12 @@ function App() {
               label="Product"
             >
               {config.baseLayers.map((baseLayer, index) => (
-                <MenuItem value={index}>{baseLayer.name}</MenuItem>
+                <MenuItem key = {index} value={index}>{baseLayer.name}</MenuItem>
               ))}
             </Select>
           </FormControl>
           <MuiPickersUtilsProvider utils={DateFnsUtils}>
-            <KeyboardDatePicker
+            <KeyboardDatePicker style={{marginRight: 16 }}
               disableToolbar
               variant="inline"
               format="MM/dd/yyyy"
@@ -290,7 +352,21 @@ function App() {
                 'aria-label': 'change date',
               }}
               />
-              <KeyboardDatePicker
+              <div className={classes.root} style={{marginRight: 16, marginTop: 16 }}>
+              <Slider color="secondary"
+                defaultValue={0}
+                //getAriaValueText={0}
+                value = {dateSliderVal}
+                aria-labelledby="discrete-slider"
+                valueLabelDisplay="auto"
+                step={1}
+                marks
+                min={0}
+                max={wmsLayersRange.length-1}
+                onChange={handleSliderChange}
+              />
+              </div>
+              <KeyboardDatePicker style={{marginRight: 16 }}
                 disableToolbar
                 variant="inline"
                 format="MM/dd/yyyy"
@@ -303,6 +379,16 @@ function App() {
                   'aria-label': 'change date',
                 }}
               />
+              {/* This Button uses a Font Icon, see the installation instructions in the Icon component docs. */}
+              <Button
+                variant="contained"
+                color="primary"
+                className={classes.button}
+                endIcon={<PlayArrowIcon />}
+                onClick = {startSliderAnim}
+              >
+                Animate
+              </Button>
           </MuiPickersUtilsProvider>
         </Toolbar>
       </AppBar>
