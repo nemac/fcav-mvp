@@ -26,7 +26,7 @@ import PlayArrowIcon from '@material-ui/icons/PlayArrow';
 import {isLeapYear, toDate, toWMSDate} from "./datemanagement";
 
 const center = [35.61540402873807, -82.56582048445668];
-const zoom = 12;
+const zoom = 5;
 
 export function App() {
   const mapRef = useRef(null);
@@ -36,39 +36,10 @@ export function App() {
   useEffect(() => {
     // create map
     mapRef.current = L.map('map', {
-      center: [49.8419, 24.0315],
-      zoom: 16,
-      layers: [
-        L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-          attribution:
-            '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-        }),
-      ]
+      center: center,
+      zoom: zoom,
     });
-    handleBaseLayerChange = (event) => {
-      var index = event.target.value;
-      var currLayer = activeBaseMap.layer;
-      console.log("current layer:",currLayer);
-      if(currLayer!=null){
-        mapRef.current.removeLayer(currLayer);
-      }
 
-      console.log("Removing ", currLayer);
-      mapRef.current.eachLayer(function(layer){
-        console.log(layer);
-      })
-
-      var baseLayer = L.tileLayer(baseMaps[index].url);
-      baseMaps[index].layer = baseLayer;
-      setActiveBaseMap(baseMaps[index]);
-      console.log("adding ", baseLayer);
-      mapRef.current.addLayer(baseLayer);
-      activeBaseMap.layer = baseLayer;
-      baseLayer.bringToBack();
-      mapRef.current.eachLayer(function(layer){
-        console.log(layer);
-      })
-    };
 //initialize map
       var baseLayer = L.tileLayer(activeBaseMap.url);
       activeBaseMap.layer = baseLayer;
@@ -76,6 +47,30 @@ export function App() {
       console.log(mapRef);
 
   }, []);
+  handleBaseLayerChange = (event) => {
+    var index = event.target.value;
+    var currLayer = activeBaseMap.layer;
+    console.log("current layer:",currLayer);
+    if(currLayer!=null){
+      mapRef.current.removeLayer(currLayer);
+    }
+
+    console.log("Removing ", currLayer);
+    mapRef.current.eachLayer(function(layer){
+      console.log(layer);
+    })
+
+    var baseLayer = L.tileLayer(baseMaps[index].url);
+    baseMaps[index].layer = baseLayer;
+    setActiveBaseMap(baseMaps[index]);
+    console.log("adding ", baseLayer);
+    mapRef.current.addLayer(baseLayer);
+    activeBaseMap.layer = baseLayer;
+    baseLayer.bringToBack();
+    mapRef.current.eachLayer(function(layer){
+      console.log(layer);
+    })
+  };
   console.log(mapRef);
   useEffect(() =>{
       console.log(mapRef.current);
@@ -249,13 +244,13 @@ export function App() {
     wmsLayersRange[index].leafletLayer.setOpacity(1);
     mapRef.addLayer(wmsLayersRange[index].leafletLayer);
     wmsLayersRange[index].leafletLayer.bringToFront();*/
-    mapRef.eachLayer((layer) =>{
+    mapRef.current.eachLayer((layer) =>{
       if(layer != activeBaseMap.layer){
-        mapRef.removeLayer(layer);
+        mapRef.current.removeLayer(layer);
       }
     })
     wmsLayersRange[index].leafletLayer.setOpacity(1);
-    mapRef.addLayer(wmsLayersRange[index].leafletLayer);
+    mapRef.current.addLayer(wmsLayersRange[index].leafletLayer);
     wmsLayersRange[index].leafletLayer.bringToFront();
     //console.log(mapRef.layers);
   }
