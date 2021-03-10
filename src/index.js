@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import "leaflet/dist/leaflet.css";
-import {MapComponent} from "./fcav";
+import {App} from "./fcav";
 import { ThemeProvider, createMuiTheme } from '@material-ui/core/styles';
 
 const theme = createMuiTheme({
@@ -17,7 +17,7 @@ const theme = createMuiTheme({
 const rootElement = document.getElementById("app");
 ReactDOM.render(
   <ThemeProvider theme={theme}>
-    <MapComponent />,
+    <App/>,
     </ThemeProvider>,
   rootElement
 );

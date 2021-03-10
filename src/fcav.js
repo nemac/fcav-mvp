@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useDebugValue } from "react";
+import React, { useState, useEffect, useDebugValue, useRef } from "react";
 import L from "leaflet";
 import config from "./config";
-import {
+/*import {
   MapContainer,
   useMap
-} from "react-leaflet";
+} from "react-leaflet";*/
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
 import nemacLogo from "./nemac_logo_white.png";
@@ -28,12 +28,58 @@ import {isLeapYear, toDate, toWMSDate} from "./datemanagement";
 const center = [35.61540402873807, -82.56582048445668];
 const zoom = 12;
 
-function App() {
-
-  const mapRef = useMap();
-
+export function App() {
+  const mapRef = useRef(null);
+  var handleBaseLayerChange;
   const [baseMaps] = useStateWithLabel(config.baseLayers, "baseMaps");
   const [activeBaseMap, setActiveBaseMap] = useStateWithLabel(config.baseLayers[2], "activeBaseMap");
+  useEffect(() => {
+    // create map
+    mapRef.current = L.map('map', {
+      center: [49.8419, 24.0315],
+      zoom: 16,
+      layers: [
+        L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+          attribution:
+            '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+        }),
+      ]
+    });
+    handleBaseLayerChange = (event) => {
+      var index = event.target.value;
+      var currLayer = activeBaseMap.layer;
+      console.log("current layer:",currLayer);
+      if(currLayer!=null){
+        mapRef.current.removeLayer(currLayer);
+      }
+
+      console.log("Removing ", currLayer);
+      mapRef.current.eachLayer(function(layer){
+        console.log(layer);
+      })
+
+      var baseLayer = L.tileLayer(baseMaps[index].url);
+      baseMaps[index].layer = baseLayer;
+      setActiveBaseMap(baseMaps[index]);
+      console.log("adding ", baseLayer);
+      mapRef.current.addLayer(baseLayer);
+      activeBaseMap.layer = baseLayer;
+      baseLayer.bringToBack();
+      mapRef.current.eachLayer(function(layer){
+        console.log(layer);
+      })
+    };
+//initialize map
+      var baseLayer = L.tileLayer(activeBaseMap.url);
+      activeBaseMap.layer = baseLayer;
+      mapRef.current.addLayer(baseLayer);
+      console.log(mapRef);
+
+  }, []);
+  console.log(mapRef);
+  useEffect(() =>{
+      console.log(mapRef.current);
+  },[mapRef])
 
   const [startDate, setStartDate] = useStateWithLabel(
     new Date("2020-01-16"),
@@ -128,18 +174,9 @@ function App() {
     getWMSDateRange(startDate, endDate), "wmsLayersRange"
   );
 
-  mapRef.on("baselayerchange", function(e) {
-    console.log("baselayerchange");
-  });
-
   const [product, setProduct] = useStateWithLabel("forwarn", "Product");
 
-  useEffect(() => { //initialize map
-    var baseLayer = L.tileLayer(activeBaseMap.url);
-    activeBaseMap.layer = baseLayer;
-    mapRef.addLayer(baseLayer);
-    console.log(mapRef);
-  }, []);
+
 
   const handleProductChange = (event) => {
     setProduct(event.target.value);
@@ -149,31 +186,6 @@ function App() {
         //console.log(event);
     event.stopPropagation();
     console.log(event);
-  };
-
-  const handleBaseLayerChange = (event) => {
-    var index = event.target.value;
-    var currLayer = activeBaseMap.layer;
-    console.log("current layer:",currLayer);
-    if(currLayer!=null){
-      mapRef.removeLayer(currLayer);
-    }
-
-    console.log("Removing ", currLayer);
-    mapRef.eachLayer(function(layer){
-      console.log(layer);
-    })
-
-    var baseLayer = L.tileLayer(baseMaps[index].url);
-    baseMaps[index].layer = baseLayer;
-    setActiveBaseMap(baseMaps[index]);
-    console.log("adding ", baseLayer);
-    mapRef.addLayer(baseLayer);
-    activeBaseMap.layer = baseLayer;
-    baseLayer.bringToBack();
-    mapRef.eachLayer(function(layer){
-      console.log(layer);
-    })
   };
 
   const onStartDateChange = (date) => {
@@ -348,6 +360,7 @@ function App() {
           </MuiPickersUtilsProvider>
         </Toolbar>
       </AppBar>
+      <div id="map"></div>
     </div>
   );
 }
@@ -356,14 +369,4 @@ function useStateWithLabel(initialValue, name) {
   const [value, setValue] = useState(initialValue);
   useDebugValue(`${name}: ${value}`);
   return [value, setValue];
-}
-
-export function MapComponent() {
-  return (
-    <div>
-      <MapContainer center={center} zoom={zoom} scrollWheelZoom={true}>
-        <App />
-      </MapContainer>
-    </div>
-  );
 }
