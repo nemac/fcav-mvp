@@ -4,7 +4,7 @@ import "leaflet/dist/leaflet.css";
 import {App} from "./fcav";
 import { ThemeProvider, createMuiTheme } from '@material-ui/core/styles';
 
-const theme = createMuiTheme({
+export const theme = createMuiTheme({
   palette: {
     primary: {
       main: "#424242"

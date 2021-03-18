@@ -24,6 +24,7 @@ import Icon from '@material-ui/core/Icon';
 import Button from '@material-ui/core/Button';
 import PlayArrowIcon from '@material-ui/icons/PlayArrow';
 import {isLeapYear, toDate, toWMSDate} from "./datemanagement";
+import {theme} from "./index";
 
 const center = [35.61540402873807, -82.56582048445668];
 const zoom = 5;
@@ -70,6 +71,14 @@ export function App() {
     mapRef.current.eachLayer(function(layer){
       console.log(layer);
     })
+
+    //change theme
+    if(baseMaps[index].theme = "Light"){
+      //theme.primary = baseMaps
+      //theme.palette.primary.main = config.themeColors[1].palette.primary.main;
+      //theme.palette.secondary.main = config.themeColors[1].palette.secondary.main;
+      //theme = config.themeColors[1];
+    }
   };
   console.log(mapRef);
   useEffect(() =>{
