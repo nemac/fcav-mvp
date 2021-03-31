@@ -45,31 +45,31 @@ export function App() {
       var baseLayer = L.tileLayer(activeBaseMap.url);
       activeBaseMap.layer = baseLayer;
       mapRef.current.addLayer(baseLayer);
-      console.log(mapRef);
+      //console.log(mapRef);
 
   }, []);
   handleBaseLayerChange = (event) => {
     var index = event.target.value;
     var currLayer = activeBaseMap.layer;
-    console.log("current layer:",currLayer);
+    //console.log("current layer:",currLayer);
     if(currLayer!=null){
       mapRef.current.removeLayer(currLayer);
     }
 
-    console.log("Removing ", currLayer);
+    //console.log("Removing ", currLayer);
     mapRef.current.eachLayer(function(layer){
-      console.log(layer);
+      //console.log(layer);
     })
 
     var baseLayer = L.tileLayer(baseMaps[index].url);
     baseMaps[index].layer = baseLayer;
     setActiveBaseMap(baseMaps[index]);
-    console.log("adding ", baseLayer);
+    //console.log("adding ", baseLayer);
     mapRef.current.addLayer(baseLayer);
     activeBaseMap.layer = baseLayer;
     baseLayer.bringToBack();
     mapRef.current.eachLayer(function(layer){
-      console.log(layer);
+      //console.log(layer);
     })
 
     //change theme
@@ -80,9 +80,9 @@ export function App() {
       //theme = config.themeColors[1];
     }
   };
-  console.log(mapRef);
+  //console.log(mapRef);
   useEffect(() =>{
-      console.log(mapRef.current);
+      //console.log(mapRef.current);
   },[mapRef])
 
   const [startDate, setStartDate] = useStateWithLabel(
@@ -145,12 +145,12 @@ export function App() {
     }
     var dateRange = dates;
     var newDateRange = dateRange.slice(startIndex, endIndex+1);
-    console.log(newDateRange);
+    //console.log(newDateRange);
     return newDateRange;
   }
 
   const getWMSDateRange = (startDate, endDate) => {
-    console.log("dates: ", dates);
+    //console.log("dates: ", dates);
     var startIndex = -1;
     var endIndex = -1;
     for(var index = 0; index < dates.length; index++){
@@ -165,7 +165,7 @@ export function App() {
       endIndex = dates.length - 1;
     }
     var newWMSLayers = wmsLayers.slice(startIndex, endIndex+1);
-    console.log(newWMSLayers);
+    //console.log(newWMSLayers);
     loadInitialLayers(newWMSLayers);
     return newWMSLayers;
   }
@@ -180,7 +180,7 @@ export function App() {
 
   const [product, setProduct] = useStateWithLabel("forwarn", "Product");
 
-
+  const [animation, setAnimation] = useStateWithLabel(false);
 
   const handleProductChange = (event) => {
     setProduct(event.target.value);
@@ -206,7 +206,7 @@ export function App() {
     var year = date.getFullYear().toString();
 
     var layerIdString = (year + month +  day + "_layer");
-    console.log(layerIdString);
+    //console.log(layerIdString);
 
     setStartDate(date);
     var newDateRange = getDateRange(date, endDate);
@@ -229,7 +229,7 @@ export function App() {
     var year = date.getFullYear().toString();
 
     var layerIdString = (year + month +  day + "_layer");
-    console.log(layerIdString);
+    //console.log(layerIdString);
 
     setEndDate(date); //set end date state
     var newDateRange = getDateRange(startDate, date); //get new array of date objects
@@ -265,6 +265,51 @@ export function App() {
   }
   const startSliderAnim = () =>{
     console.log("start anim");
+    if(!animation){
+      setAnimation(true);
+      //1. clear all layer
+      mapRef.current.eachLayer((layer) =>{
+        if(layer != activeBaseMap.layer){
+          mapRef.current.removeLayer(layer);
+        }
+      })
+      //2. preload with opacity set to 0
+      /*wmsLayersRange.forEach(e =>{
+        var layer = e.leafletLayer;
+        var index = wmsLayersRange.indexOf(e);
+        layer.setOpacity(0);
+        mapRef.current.addLayer(layer);
+        //check if layer is loaded
+        layer.on('load', function(){
+          console.log("loaded:" + index);
+          layer.setOpacity(1);
+          layer.bringToFront();
+        });
+      })*/
+      for(var i = 0; i < wmsLayersRange.length; i++){
+        var layer = wmsLayersRange[i].leafletLayer;
+        layer.setOpacity(0);
+        mapRef.current.addLayer(layer);
+        layer.on('load', function(){
+          console.log("loaded");
+          layer.setOpacity(1);
+          layer.bringToFront();
+        });
+      }
+    }
+    else{
+      setAnimation(false);
+    }
+    while(animation){
+      for(var i = 0; i < wmsLayersRange.length; i++){
+        setDateSliderVal(i);
+        var layer = wmsLayersRange[i].leafletLayer;
+        layer.setOpacity(1);
+        setTimeout(() => {
+          layer.setOpacity(0);
+        }, 1000);
+      }
+    }
   }
   const useStyles = makeStyles({
     root: {
