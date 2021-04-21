@@ -4,8 +4,9 @@ import config from "./config";
 import {
   MapContainer,
   TileLayer,
-  useMap
+  useMap,
 } from "react-leaflet";
+import { useLeafletContext } from '@react-leaflet/core';
 import { Grid } from "@material-ui/core";
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
@@ -35,11 +36,19 @@ const zoom = 5;
 
 export function App() {
 
+  // Initialize Material UI styles
+  const useStyles = makeStyles({
+    root: {
+      width: 300,
+    },
+  });
+  const classes = useStyles();
+
   /******************************* STATE ***********************************/
 
   const [map, setMap] = useState(null);
-  const [baseMaps] = useStateWithLabel(config.baseLayers, "baseMaps");
-  const [activeBaseMap, setActiveBaseMap] = useStateWithLabel(config.baseLayers[2], "activeBaseMap");
+  const [basemaps] = useStateWithLabel(config.baseLayers, "basemaps");
+  const [activeBasemap, setActiveBaseMap] = useStateWithLabel(config.baseLayers[2], "activeBasemap");
   const [startDate, setStartDate] = useStateWithLabel(
     new Date("2020-01-16"),
     "startDate"
@@ -120,14 +129,6 @@ export function App() {
     getWMSDateRange(startDate, endDate), "wmsLayersRange"
   );
 
-  // Material UI magic
-  const useStyles = makeStyles({
-    root: {
-      width: 300,
-    },
-  });
-  const classes = useStyles();
-
 
   /*************************** COMPONENTS *********************************/
 
@@ -174,7 +175,7 @@ export function App() {
       setDateSliderVal(index);
       console.log("slider change: " + index);
       map.eachLayer((layer) =>{
-        if(layer != activeBaseMap.layer){
+        if(layer != activeBasemap.layer){
           map.removeLayer(layer);
         }
       })
@@ -191,7 +192,7 @@ export function App() {
           setAnimation(true);
           //1. clear all layer
           map.eachLayer((layer) =>{
-            if(layer != activeBaseMap.layer){
+            if(layer != activeBasemap.layer){
               map.removeLayer(layer);
             }
           })
@@ -249,7 +250,7 @@ export function App() {
 
 
     return (
-          <MuiPickersUtilsProvider utils={DateFnsUtils}>
+      <MuiPickersUtilsProvider utils={DateFnsUtils}>
             <KeyboardDatePicker style={{marginRight: 16 }}
               disableToolbar
               variant="inline"
@@ -292,42 +293,14 @@ export function App() {
             />
         <AnimateBtn/>
       </MuiPickersUtilsProvider>
-      )
+    )
   }
 
-  function BaseMapSelect () {
+  function BasemapSelect () {
 
     const handleBaseLayerChange = (event) => {
       var index = event.target.value;
-      var currLayer = activeBaseMap.layer;
-      //console.log("current layer:",currLayer);
-      if(currLayer!=null){
-        map.removeLayer(currLayer);
-      }
-
-      //console.log("Removing ", currLayer);
-      map.eachLayer(function(layer){
-        //console.log(layer);
-      })
-
-      var baseLayer = L.tileLayer(baseMaps[index].url);
-      baseMaps[index].layer = baseLayer;
-      setActiveBaseMap(baseMaps[index]);
-      //console.log("adding ", baseLayer);
-      map.addLayer(baseLayer);
-      activeBaseMap.layer = baseLayer;
-      baseLayer.bringToBack();
-      map.eachLayer(function(layer){
-        //console.log(layer);
-      })
-
-      //change theme
-      if(baseMaps[index].theme = "Light"){
-        //theme.primary = baseMaps
-        //theme.palette.primary.main = config.themeColors[1].palette.primary.main;
-        //theme.palette.secondary.main = config.themeColors[1].palette.secondary.main;
-        //theme = config.themeColors[1];
-      }
+      setActiveBaseMap(basemaps[index]);
     };
 
     return (
@@ -338,13 +311,15 @@ export function App() {
         <Select
           labelId="fcav-product-select-label"
           id="fcav-product-select"
-          value = {baseMaps.indexOf(activeBaseMap)}
+          value = {basemaps.indexOf(activeBasemap)}
           onChange={handleBaseLayerChange}
           label="Product"
         >
-          {config.baseLayers.map((baseLayer, index) => (
-            <MenuItem key = {index} value={index}>{baseLayer.name}</MenuItem>
-          ))}
+          {
+            config.baseLayers.map((baseLayer, index) => (
+              <MenuItem key = {index} value={index}>{baseLayer.name}</MenuItem>
+            ))
+          }
         </Select>
       </FormControl>
     )
@@ -383,12 +358,12 @@ export function App() {
           id='menu'
           position="static"
           color="primary"
-          style={{flexWrap: 'flex', flexDirection: 'column'}}
+          style={{ zIndex: '0', flexWrap: 'flex', flexDirection: 'column'}}
         >
           <Toolbar>
             <img src={nemacLogo} width="150" alt="your mom"></img>
             {/*<ProductTypeSelect/>*/}
-            <BaseMapSelect/>
+            <BasemapSelect/>
             <DateRangeAnimate/>
           </Toolbar>
         </AppBar>
@@ -396,6 +371,45 @@ export function App() {
     ) 
   }
 
+  function BasemapLayer () {
+    const context = useLeafletContext()
+    const basemapRef = useRef()
+
+    useEffect(() => {
+
+      basemapRef.current = new L.tileLayer(activeBasemap.url, { opacity: 0, attribution: activeBasemap.attribution })
+      const container = context.map
+      container.addLayer(basemapRef.current)
+      basemapRef.current.bringToBack()
+      basemapRef.current.setOpacity(1)
+
+      return () => {
+        container.removeLayer(basemapRef.current)
+      }
+    }, [])
+
+    return null
+  }
+
+/*
+  function TileLayerManager () {
+    const context = useLeafletContext()
+
+    // init 
+    useEffect(() => {
+      
+    }, []) // empty brackets implies "run this once at initial render and then never again"
+
+    // update
+    useEffect(() => {
+      
+    }, [dateSliderVal]
+    
+  }
+
+*/
+
+  // App
   return (
     <Grid container>
       <TopBar/>
@@ -406,14 +420,12 @@ export function App() {
           style={{ height: "90vh" }}
           whenCreated={setMap}
         >
-          <TileLayer
-            attribution={ activeBaseMap.attribution }
-            url={ activeBaseMap.url }
-          />
+        <BasemapLayer/>
         </MapContainer>
       </Grid>
     </Grid>
   );
+
 }
 
 
