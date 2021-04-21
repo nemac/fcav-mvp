@@ -26,10 +26,12 @@ import { makeStyles } from '@material-ui/core/styles';
 import Icon from '@material-ui/core/Icon';
 import Button from '@material-ui/core/Button';
 import PlayArrowIcon from '@material-ui/icons/PlayArrow';
+import StopIcon from '@material-ui/icons/Stop';
 import {isLeapYear, toDate, toWMSDate} from "./datemanagement";
 import {theme} from "./index";
 
 
+// Map Defaults
 const center = [35.61540402873807, -82.56582048445668];
 const zoom = 5;
 
@@ -44,207 +46,142 @@ export function App() {
   });
   const classes = useStyles();
 
-  /******************************* STATE ***********************************/
-
+  // Map
   const [map, setMap] = useState(null);
+
+  // Basemaps
   const [basemaps] = useStateWithLabel(config.baseLayers, "basemaps");
+  const basemapRef = useRef()
   const [activeBasemap, setActiveBaseMap] = useStateWithLabel(config.baseLayers[2], "activeBasemap");
-  const [startDate, setStartDate] = useStateWithLabel(
-    new Date("2020-01-16"),
-    "startDate"
-  );
-  const [currentDate, setCurrentDate] = useStateWithLabel(
-    "2020-01-16",
-    "currentDate"
-  );
-  const [endDate, setEndDate] = useStateWithLabel(
-    new Date("2020-02-17"),
-    "endDate"
-  );
-  const [dateSliderVal, setDateSliderVal] = useStateWithLabel(0, "dateSliderVal");
-  const [sliderAnimCount, setSliderAnimCount] = useStateWithLabel(0, "sliderAnimCount");
-  const [wmsLayers, setWMSLayers] = useStateWithLabel(
-    config.juliandates.map(jd => {
-      var date = toDate(parseInt(jd) + 7, 2020); //7 day offset
-      var wmsdate = toWMSDate(date);
-      return config.wms_template(wmsdate);
-    }),
-    "wmsLayers"
-  );
-  const dates = config.juliandates.map(jd => {
-    var date = toDate(parseInt(jd)+7, 2020);
-    return date;
-  });
-  const [product, setProduct] = useStateWithLabel("forwarn", "Product");
-  const [animation, setAnimation] = useStateWithLabel(false);
 
-  const getDateRange = (startDate, endDate) => {
+
+  // Layers
+  const [wmsLayers, setWmsLayers] = useStateWithLabel(config.juliandates.map(jd => {
+    const date = toDate(parseInt(jd) + 7, 2020); //7 day offset
+    const wmsdate = toWMSDate(date);
+    const o = config.wms_template(wmsdate);
+    o.leafletLayer = L.tileLayer.wms(o.baseUrl, o.options);
+    o.date = date;
+    return o;
+  }), "wmsLayers")
+
+  const [startDate, setStartDate] = useStateWithLabel(new Date("2020-01-16"), "startDate")
+  const [currentDate, setCurrentDate] = useStateWithLabel("2020-01-16","currentDate")
+  const [endDate, setEndDate] = useStateWithLabel(new Date("2020-02-17"), "endDate")
+  const [dateRangeIndex, setDateRangeIndex] = useStateWithLabel(0, "dateRangeIndex");
+
+  const getLayerRangeByDate = (startDate, endDate) => {
     var startIndex = -1;
     var endIndex = -1;
-    for(var index = 0; index < dates.length; index++){
-      if(dates[index] >= startDate && startIndex === -1){
-        startIndex = index;
+    for (let index = 0; index < wmsLayers.length; index++) {
+      if (wmsLayers[index].date >= startDate && startIndex === -1) {
+        startIndex = index
       }
-      if(dates[index] >= endDate && endIndex === -1){
-        endIndex = index-1;
+      if(wmsLayers[index].date >= endDate && endIndex === -1){
+        endIndex = index-1
       }
     }
-    if(endIndex === -1){
-      endIndex = dates.length - 1;
+    if (endIndex === -1) {
+      endIndex = wmsLayers.length - 1;
     }
-    var dateRange = dates;
-    var newDateRange = dateRange.slice(startIndex, endIndex+1);
-    //console.log(newDateRange);
-    return newDateRange;
+    const newRange = wmsLayers.slice(startIndex, endIndex+1);
+    return newRange;
   }
 
-  const getWMSDateRange = (startDate, endDate) => {
-    const loadInitialLayers = (wmsLayers) => {
-      for(var index in wmsLayers){
-        var wmsLayer = L.tileLayer.wms(wmsLayers[index].baseUrl, wmsLayers[index].options);
-        wmsLayers[index].leafletLayer = wmsLayer;
-      }
-    };
-    var startIndex = -1;
-    var endIndex = -1;
-    for(var index = 0; index < dates.length; index++){
-      if(dates[index] >= startDate && startIndex === -1){
-        startIndex = index;
-      }
-      if(dates[index] >= endDate && endIndex === -1){
-        endIndex = index-1;
-      }
-    }
-    if(endIndex === -1){
-      endIndex = dates.length - 1;
-    }
-    var newWMSLayers = wmsLayers.slice(startIndex, endIndex+1);
-    loadInitialLayers(newWMSLayers);
-    return newWMSLayers;
+  const [layerRange, setLayerRange] = useStateWithLabel(
+    getLayerRangeByDate(startDate, endDate), "layerRange"
+  )
+
+  const allDates = wmsLayers.map(o => o.date)
+
+  // Components
+
+  function TileLayerManager () {
+    const context = useLeafletContext()
+
+    // init 
+    useEffect(() => {
+      layerRange.forEach((d, i) => {
+        context.map.addLayer(d.leafletLayer)
+        if (i == dateRangeIndex) { d.leafletLayer.setOpacity(1) }
+      })
+    }, [])
+
+    // slider movement or animation step
+    useEffect(() => {
+      layerRange.forEach((d, i) => {
+        d.leafletLayer.setOpacity(0)
+      })
+      layerRange[dateRangeIndex].leafletLayer.setOpacity(1)
+    }, [dateRangeIndex])
+
+    return (<div></div>)
+    
   }
-  const [dateRange, setDateRange] = useStateWithLabel(
-    getDateRange(startDate, endDate), "dateRange"
-  );
-  const [wmsLayersRange, setWmsLayersRange] = useStateWithLabel(
-    getWMSDateRange(startDate, endDate), "wmsLayersRange"
-  );
-
-
-  /*************************** COMPONENTS *********************************/
 
   function DateRangeAnimate () {
 
+    const [animating, setAnimating] = useStateWithLabel(false);
+
+     
     const onStartDateChange = (date) => {
-      var day = date.getDate().toString();
+      var day = date.getDate().toString()
       if(day.length < 2){
-        day = "0" + day;
+        day = "0" + day
       }
-      var month = (date.getMonth()+1).toString();
-      if(month.length < 2){
-        month = "0" + month;
+      var month = (date.getMonth()+1).toString()
+      if(month.length < 2) {
+        month = "0" + month
       }
-      var year = date.getFullYear().toString();
-      var layerIdString = (year + month +  day + "_layer");
-      setStartDate(date);
-      var newDateRange = getDateRange(date, endDate);
-      setDateRange(newDateRange);
-      var newDates = getWMSDateRange(date, endDate);
-      setWmsLayersRange(newDates);
-    };
+      var year = date.getFullYear().toString()
+      var layerIdString = (year + month +  day + "_layer")
+      setStartDate(date)
+
+      var newLayerRange = getLayerRangeByDate(date, endDate);
+      setLayerRange(newLayerRange);
+    }
 
     const onEndDateChange = (date) => {
       var day = date.getDate().toString();
-      if(day.length < 2){
+      if (day.length < 2) {
         day = "0" + day;
       }
-      var month = (date.getMonth()+1).toString();
-      if(month.length < 2){
+      var month = (date.getMonth()+1).toString()
+      if (month.length < 2) {
         month = "0" + month;
       }
       var year = date.getFullYear().toString();
       var layerIdString = (year + month +  day + "_layer");
       setEndDate(date); //set end date state
-      var newDateRange = getDateRange(startDate, date); //get new array of date objects
-      setDateRange(newDateRange); //set date objects to state
-      var newWMSDates = getWMSDateRange(startDate, date); //get new array of wms layers
-      setWmsLayersRange(newWMSDates); //set wms layers to state
-    };
+      setLayerRange(getLayerRangeByDate(startDate, date)); //set date objects to state
+    }
 
     const handleSliderChange = (event, value) => {
       var index = value;
-      setDateSliderVal(index);
+      setDateRangeIndex(index);
       console.log("slider change: " + index);
+      /*
       map.eachLayer((layer) =>{
-        if(layer != activeBasemap.layer){
+        if(layer != basemapRef.current){
           map.removeLayer(layer);
         }
       })
-      wmsLayersRange[index].leafletLayer.setOpacity(1);
-      map.addLayer(wmsLayersRange[index].leafletLayer);
-      wmsLayersRange[index].leafletLayer.bringToFront();
+      */
+      layerRange[index].leafletLayer.setOpacity(1);
+      map.addLayer(layerRange[index].leafletLayer);
+      layerRange[index].leafletLayer.bringToFront();
     }
 
 
     function AnimateBtn () {
-      const startSliderAnim = () =>{
-        console.log("start anim");
-        if(!animation){
-          setAnimation(true);
-          //1. clear all layer
-          map.eachLayer((layer) =>{
-            if(layer != activeBasemap.layer){
-              map.removeLayer(layer);
-            }
-          })
-          //2. preload with opacity set to 0
-          /*wmsLayersRange.forEach(e =>{
-            var layer = e.leafletLayer;
-            var index = wmsLayersRange.indexOf(e);
-            layer.setOpacity(0);
-            map.addLayer(layer);
-            //check if layer is loaded
-            layer.on('load', function(){
-              console.log("loaded:" + index);
-              layer.setOpacity(1);
-              layer.bringToFront();
-            });
-          })*/
-          for(var i = 0; i < wmsLayersRange.length; i++){
-            var layer = wmsLayersRange[i].leafletLayer;
-            layer.setOpacity(0);
-            map.addLayer(layer);
-            layer.on('load', function(){
-              console.log("loaded");
-              layer.setOpacity(1);
-              layer.bringToFront();
-            });
-          }
-        }
-        else{
-          setAnimation(false);
-        }
-        while(animation){
-          for(var i = 0; i < wmsLayersRange.length; i++){
-            setDateSliderVal(i);
-            var layer = wmsLayersRange[i].leafletLayer;
-            layer.setOpacity(1);
-            setTimeout(() => {
-              layer.setOpacity(0);
-            }, 1000);
-          }
-        }
-      }
-
       return (
         <Button
           variant="contained"
           color="primary"
           className={classes.button}
-          endIcon={<PlayArrowIcon />}
-          onClick = {startSliderAnim}
-        >
-          Animate
-        </Button>
+          startIcon={ animating ? <StopIcon/> : <PlayArrowIcon />}
+          onClick={ () => { setAnimating(!animating) } }
+        >{ animating ? "Stop" : "Play" }</Button>
       )
     }
 
@@ -268,13 +205,13 @@ export function App() {
               <Slider color="secondary"
                 defaultValue={0}
                 //getAriaValueText={0}
-                value = {dateSliderVal}
+                value = {dateRangeIndex}
                 aria-labelledby="discrete-slider"
                 valueLabelDisplay="auto"
                 step={1}
                 marks
                 min={0}
-                max={wmsLayersRange.length-1}
+                max={layerRange.length-1}
                 onChange={handleSliderChange}
               />
             </div>
@@ -306,7 +243,7 @@ export function App() {
     return (
       <FormControl variant="outlined" style={{marginRight: 16 }}>
         <InputLabel shrink id="demo-simple-select-placeholder-label-label">
-          Base Layer
+          Basemap
         </InputLabel>
         <Select
           labelId="fcav-product-select-label"
@@ -327,7 +264,7 @@ export function App() {
 
   function ProductTypeSelect () {
     const handleProductChange = (event) => {
-      setProduct(event.target.value);
+      //setProduct(event.target.value);
     };
 
     return (
@@ -338,7 +275,7 @@ export function App() {
         <Select
           labelId="fcav-product-select-label"
           id="fcav-product-select"
-          value={product}
+          value="0"
           onChange={handleProductChange}
           label="Product"
         >
@@ -373,7 +310,6 @@ export function App() {
 
   function BasemapLayer () {
     const context = useLeafletContext()
-    const basemapRef = useRef()
 
     useEffect(() => {
 
@@ -391,24 +327,6 @@ export function App() {
     return null
   }
 
-/*
-  function TileLayerManager () {
-    const context = useLeafletContext()
-
-    // init 
-    useEffect(() => {
-      
-    }, []) // empty brackets implies "run this once at initial render and then never again"
-
-    // update
-    useEffect(() => {
-      
-    }, [dateSliderVal]
-    
-  }
-
-*/
-
   // App
   return (
     <Grid container>
@@ -421,6 +339,7 @@ export function App() {
           whenCreated={setMap}
         >
         <BasemapLayer/>
+        <TileLayerManager/>
         </MapContainer>
       </Grid>
     </Grid>
