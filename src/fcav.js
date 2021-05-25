@@ -27,7 +27,7 @@ import {isLeapYear, toDate, toWMSDate} from "./datemanagement";
 import {theme} from "./index";
 
 const center = [35.61540402873807, -82.56582048445668];
-const zoom = 5;
+const zoom = 11;
 
 export function App() {
   const mapRef = useRef(null);
@@ -101,7 +101,7 @@ export function App() {
   );
 
   const [dateSliderVal, setDateSliderVal] = useStateWithLabel(0, "dateSliderVal");
-  const [sliderAnimCount, setSliderAnimCount] = useStateWithLabel(0, "sliderAnimCount");
+  const [currAnimIndex, setCurrAnimIndex] = useStateWithLabel(-1, "animationIndex");
 
   //javascript objects
   const [wmsLayers, setWMSLayers] = useStateWithLabel(
@@ -239,6 +239,7 @@ export function App() {
   };
 
   const handleSliderChange = (event, value) => {
+    console.log("slider change");
     var index = value;
     setDateSliderVal(index);
         console.log("slider change: " + index);
@@ -286,31 +287,48 @@ export function App() {
           layer.bringToFront();
         });
       })*/
+      var layersToLoad = wmsLayersRange.length;
       for(var i = 0; i < wmsLayersRange.length; i++){
         var layer = wmsLayersRange[i].leafletLayer;
         layer.setOpacity(0);
         mapRef.current.addLayer(layer);
+        wmsLayersRange[i].leafletLayer = layer;
         layer.on('load', function(){
           console.log("loaded");
-          layer.setOpacity(1);
-          layer.bringToFront();
+          layersToLoad--;
+          console.log(layersToLoad);
+          //layer.setOpacity(1);
+          //layer.bringToFront();
+          if(layersToLoad == 0){
+            console.log(mapRef.current);
+            setCurrAnimIndex(0);
+          }
         });
       }
     }
     else{
       setAnimation(false);
     }
-    while(animation){
-      for(var i = 0; i < wmsLayersRange.length; i++){
-        setDateSliderVal(i);
-        var layer = wmsLayersRange[i].leafletLayer;
-        layer.setOpacity(1);
-        setTimeout(() => {
-          layer.setOpacity(0);
-        }, 1000);
-      }
-    }
   }
+  useEffect(() =>{
+    //var currIndex = index;
+    if(currAnimIndex == wmsLayersRange.length-1 || currAnimIndex < 0){
+      console.log("end of anim");
+      console.log(mapRef.current);
+      return;
+    }
+    //console.log(wmsLayersRange[currAnimIndex].leafletLayer);
+    var layer = wmsLayersRange[currAnimIndex].leafletLayer;
+    layer.bringToFront();
+    layer.setOpacity(1);
+    console.log(mapRef.current.hasLayer(layer));
+    const timer = setTimeout(() => {
+      //wmsLayersRange[currIndex].leafletLayer.setOpacity(0);
+      //setDateSliderVal(dateSliderVal+1);
+      console.log("curr anim index: " + currAnimIndex);
+      setCurrAnimIndex(currAnimIndex+1);
+    }, 3000);
+  },[currAnimIndex]);
   const useStyles = makeStyles({
     root: {
       width: 300,
