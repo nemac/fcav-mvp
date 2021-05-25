@@ -64,6 +64,7 @@ export function App() {
   const classes = useStyles();
 
   const [animating, setAnimating] = useStateWithLabel(false);
+  const [animReady, setAnimReady] = useStateWithLabel(false);
 
   // Date State
   const [startDate, setStartDate] = useStateWithLabel(new Date("2020-01-16"), "startDate")
@@ -104,31 +105,81 @@ export function App() {
     const context = useLeafletContext()
 
     const clearMap = () => {
+      console.log("Clearing map...")
       context.map.eachLayer((layer) => {
-        if (basemapRef.current === layer) { return }
+        if (basemapRef.current === layer) {
+          console.log("Skipping basemap layer...")
+          console.log(basemapRef.current)
+          return
+        }
         context.map.removeLayer(layer)
       })
     }
 
-    const addLayer = () => {
-      clearMap()
-      const layer = layerRange[dateRangeIndex]
-      context.map.addLayer(layer.leafletLayer)
+    const addLayer = (index) => {
+      const layer = layerRange[index]
+      if (!context.map.hasLayer(layer.leafletLayer)) {
+        console.log("Adding layer to map...")
+        console.log(layer)
+        context.map.addLayer(layer.leafletLayer)
+      } else {
+        console.log("Layer is already on the map: ")
+        console.log(layerRange[index])
+      }
       layer.leafletLayer.setOpacity(1)
+      layer.leafletLayer.bringToFront()
+    }
+
+    const addAllLayers = () => {
+      let layersToLoad = wmsLayers.length;
+      for(var i = 0; i < wmsLayers.length; i++){
+        var layer = wmsLayers[i].leafletLayer;
+        layer.setOpacity(0);
+        context.map.addLayer(layer);
+        wmsLayers[i].leafletLayer = layer;
+        layer.on('load', function(){
+          console.log("loaded");
+          layersToLoad--;
+          console.log(layersToLoad);
+          //layer.setOpacity(1);
+          //layer.bringToFront();
+          if(layersToLoad == 0){
+            console.log("All layers loaded.")
+            setAnimReady(true)
+          }
+        });
+      } 
     }
 
     useEffect(() => {
-      addLayer()
-      if (animating) {
+      addLayer(dateRangeIndex)
+      if (animating && animReady) {
         const newDateRangeIndex = (dateRangeIndex+1) == layerRange.length ? 0 : dateRangeIndex+1
-        const timer = setTimeout(() => { setDateRangeIndex(newDateRangeIndex) }, 2000)
+        console.log("Setting new dateRangeIndex " + newDateRangeIndex + " in 3 seconds")
+        const timer = setTimeout(() => { setDateRangeIndex(newDateRangeIndex) }, 3000)
         return () => { clearTimeout(timer) }
       }
     }, [dateRangeIndex])
 
-//    useEffect(() => {
-//      setDateRangeIndex(0)
-//    }, [animating])
+    useEffect(() => {
+      if (animating) {
+        console.log("Preloading animation layers...")
+        addAllLayers()
+      } else {
+        console.log("Stop button triggered, setting animReady to false...")
+        setAnimReady(false)
+      }
+    }, [animating])
+
+    useEffect(() => {
+      if (animReady) {
+        console.log("Animation ready. Setting dateRangeIndex to 0...")
+        setDateRangeIndex(0)
+      } else {
+        console.log("animReady set to false, clearing map...")
+        clearMap()
+      }
+    }, [animReady])
 
     return null
 
