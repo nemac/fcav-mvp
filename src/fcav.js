@@ -93,7 +93,7 @@ export function App() {
     getLayerRangeByDate(startDate, endDate, wmsLayers), "layerRange"
   )
 
-  // State change and event handlers 
+  // State change and event handlers
 
   const onStartDateChange = (date) => {
     let day = date.getDate().toString()
@@ -304,8 +304,9 @@ export function App() {
         <AppBar
           id='menu'
           position="static"
-          color="primary"
-          style={{ zIndex: '0', flexWrap: 'flex', flexDirection: 'column'}}
+          color="#424242"
+
+          style={{ zIndex: '0', flexWrap: 'flex', flexDirection: 'column', backgroundColor: "#424242"}}
         >
           <Toolbar>
             <img src={nemacLogo} width="150" alt="your mom"></img>
@@ -315,7 +316,7 @@ export function App() {
           </Toolbar>
         </AppBar>
       </Grid>
-    ) 
+    )
   }
 
   // App
@@ -335,5 +336,3 @@ export function App() {
   )
 
 }
-
-
